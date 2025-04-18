@@ -38,19 +38,25 @@ CLASS mainWindow INHERITS Form:
         Visual Designer to avoid any incompatible modifications.
         
         Modifying the contents of this method using a code editor will invalidate any support for this file. */
+        THIS-OBJECT:btnCustomers = NEW System.Windows.Forms.Button().
         THIS-OBJECT:SuspendLayout().
+        /*  */
+        /* btnCustomers */
+        /*  */
+        THIS-OBJECT:btnCustomers:Location = NEW System.Drawing.Point(-1, 1).
+        THIS-OBJECT:btnCustomers:Name = "btnCustomers".
+        THIS-OBJECT:btnCustomers:Size = NEW System.Drawing.Size(150, 40).
+        THIS-OBJECT:btnCustomers:TabIndex = 0.
+        THIS-OBJECT:btnCustomers:Text = "View Customers".
+        THIS-OBJECT:btnCustomers:UseCompatibleTextRendering = TRUE.
+        THIS-OBJECT:btnCustomers:Click:Subscribe(THIS-OBJECT:btnCustomers_Click).
         /*  */
         /* mainWindow */
         /*  */
-        THIS-OBJECT:ClientSize = NEW System.Drawing.Size(400, 300).
+        THIS-OBJECT:ClientSize = NEW System.Drawing.Size(800, 600).
+        THIS-OBJECT:Controls:Add(THIS-OBJECT:btnCustomers).
         THIS-OBJECT:Name = "mainWindow".
         THIS-OBJECT:Text = "mainWindow".
-        btnCustomers = NEW System.Windows.Forms.Button().
-        btnCustomers:Text = "View Customers".
-        btnCustomers:Location = NEW System.Drawing.Point(100, 100).
-        btnCustomers:Size = NEW System.Drawing.Size(150, 40).
-        btnCustomers:Click:Subscribe(THIS-OBJECT:btnCustomers_Click).
-        THIS-OBJECT:Controls:Add(btnCustomers).
         THIS-OBJECT:Load:Subscribe(THIS-OBJECT:mainWindow_Load).
         THIS-OBJECT:ResumeLayout(FALSE).
         CATCH e AS Progress.Lang.Error:
@@ -69,9 +75,14 @@ CLASS mainWindow INHERITS Form:
 
 	END METHOD.
     METHOD PRIVATE VOID btnCustomers_Click(sender AS System.Object, e AS System.EventArgs):
-        DEFINE VARIABLE custWin AS clientList NO-UNDO.
-        custWin = NEW clientList().
-        WAIT-FOR custWin:ShowDialog().  /* You can use Show() if you want non-modal behavior */
+        DEFINE VARIABLE custCtrl AS clientList NO-UNDO.
+        custCtrl = NEW clientList().
+        custCtrl:Location = NEW System.Drawing.Point(0, 10).
+        custCtrl:TopLevel = FALSE.
+        custCtrl:FormBorderStyle = System.Windows.Forms.FormBorderStyle:None.
+/*        custCtrl:Dock = System.Windows.Forms.DockStyle:Fill.*/
+        custCtrl:Show().
+        THIS-OBJECT:Controls:Add(custCtrl).
     END METHOD.
     DESTRUCTOR PUBLIC mainWindow ( ):
 
