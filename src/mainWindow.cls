@@ -17,6 +17,7 @@ CLASS mainWindow INHERITS Form:
     
     DEFINE PRIVATE VARIABLE components AS System.ComponentModel.IContainer NO-UNDO.
     DEFINE PRIVATE VARIABLE btnCustomers AS System.Windows.Forms.Button NO-UNDO.
+
         
     CONSTRUCTOR PUBLIC mainWindow (  ):
         
@@ -43,13 +44,14 @@ CLASS mainWindow INHERITS Form:
         /*  */
         /* btnCustomers */
         /*  */
-        THIS-OBJECT:btnCustomers:Location = NEW System.Drawing.Point(-1, 1).
+        THIS-OBJECT:btnCustomers:Location = NEW System.Drawing.Point(12, 12).
         THIS-OBJECT:btnCustomers:Name = "btnCustomers".
         THIS-OBJECT:btnCustomers:Size = NEW System.Drawing.Size(150, 40).
         THIS-OBJECT:btnCustomers:TabIndex = 0.
         THIS-OBJECT:btnCustomers:Text = "View Customers".
         THIS-OBJECT:btnCustomers:UseCompatibleTextRendering = TRUE.
         THIS-OBJECT:btnCustomers:Click:Subscribe(THIS-OBJECT:btnCustomers_Click).
+
         /*  */
         /* mainWindow */
         /*  */
@@ -84,6 +86,9 @@ CLASS mainWindow INHERITS Form:
         custCtrl:Show().
         THIS-OBJECT:Controls:Add(custCtrl).
     END METHOD.
+
+
+
     DESTRUCTOR PUBLIC mainWindow ( ):
 
     END DESTRUCTOR.
