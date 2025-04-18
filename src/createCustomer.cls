@@ -16,7 +16,9 @@ BLOCK-LEVEL ON ERROR UNDO, THROW.
 
 CLASS createCustomer INHERITS Form: 
     
+    DEFINE PRIVATE VARIABLE filterComboBox AS System.Windows.Forms.ComboBox NO-UNDO.
     DEFINE PRIVATE VARIABLE components AS System.ComponentModel.IContainer NO-UNDO.
+    DEFINE PRIVATE VARIABLE countryLabel AS System.Windows.Forms.Label NO-UNDO.
     DEFINE PRIVATE VARIABLE customerAddressTB AS System.Windows.Forms.TextBox NO-UNDO.
     DEFINE PRIVATE VARIABLE customerAddressLabel AS System.Windows.Forms.Label NO-UNDO.
     DEFINE PRIVATE VARIABLE customerCityTB AS System.Windows.Forms.TextBox NO-UNDO.
@@ -24,8 +26,8 @@ CLASS createCustomer INHERITS Form:
     DEFINE PRIVATE VARIABLE customerNameTB AS System.Windows.Forms.TextBox NO-UNDO.
     DEFINE PRIVATE VARIABLE customerNameLabel AS System.Windows.Forms.Label NO-UNDO.
     DEFINE PRIVATE VARIABLE saveBtn AS System.Windows.Forms.Button NO-UNDO.
-    DEFINE PRIVATE VARIABLE bindingSource1 AS Progress.Data.BindingSource NO-UNDO.
-    DEFINE VAR qh AS HANDLE NO-UNDO.
+
+
         
     CONSTRUCTOR PUBLIC createCustomer (  ):
         
@@ -54,6 +56,8 @@ CLASS createCustomer INHERITS Form:
         THIS-OBJECT:customerAddressTB = NEW System.Windows.Forms.TextBox().
         THIS-OBJECT:customerCityTB = NEW System.Windows.Forms.TextBox().
         THIS-OBJECT:saveBtn = NEW System.Windows.Forms.Button().
+        THIS-OBJECT:countryLabel = NEW System.Windows.Forms.Label().
+        THIS-OBJECT:filterComboBox = NEW System.Windows.Forms.ComboBox().
         THIS-OBJECT:SuspendLayout().
         /*  */
         /* customerNameLabel */
@@ -115,9 +119,38 @@ CLASS createCustomer INHERITS Form:
         THIS-OBJECT:saveBtn:UseVisualStyleBackColor = TRUE.
         THIS-OBJECT:saveBtn:Click:Subscribe(THIS-OBJECT:saveBtn_Click).
         /*  */
+        /* countryLabel */
+        /*  */
+        THIS-OBJECT:countryLabel:Location = NEW System.Drawing.Point(12, 79).
+        THIS-OBJECT:countryLabel:Name = "countryLabel".
+        THIS-OBJECT:countryLabel:Size = NEW System.Drawing.Size(100, 23).
+        THIS-OBJECT:countryLabel:TabIndex = 7.
+        THIS-OBJECT:countryLabel:Text = "Country".
+        THIS-OBJECT:countryLabel:UseCompatibleTextRendering = TRUE.
+        /*  */
+        /* filterComboBox */
+        /*  */                     
+    
+        THIS-OBJECT:filterComboBox:FormattingEnabled = TRUE.
+        THIS-OBJECT:filterComboBox:Location = NEW System.Drawing.Point(65, 80).
+        THIS-OBJECT:filterComboBox:Size = NEW System.Drawing.Size(121, 21).
+        THIS-OBJECT:filterComboBox:TabIndex = 4.
+        THIS-OBJECT:Controls:Add(THIS-OBJECT:filterComboBox).
+    
+        DEFINE VARIABLE stateName AS CHARACTER NO-UNDO.
+    
+        FOR EACH State NO-LOCK:
+            stateName = State.StateName.
+            THIS-OBJECT:filterComboBox:Items:Add(stateName).
+        END.
+    
+        THIS-OBJECT:ResumeLayout(FALSE).
+        /*  */
         /* createCustomer */
         /*  */
         THIS-OBJECT:ClientSize = NEW System.Drawing.Size(398, 394).
+        THIS-OBJECT:Controls:Add(THIS-OBJECT:filterComboBox).
+        THIS-OBJECT:Controls:Add(THIS-OBJECT:countryLabel).
         THIS-OBJECT:Controls:Add(THIS-OBJECT:saveBtn).
         THIS-OBJECT:Controls:Add(THIS-OBJECT:customerCityTB).
         THIS-OBJECT:Controls:Add(THIS-OBJECT:customerAddressTB).
@@ -134,7 +167,7 @@ CLASS createCustomer INHERITS Form:
         END CATCH.
     END METHOD.
 
-    
+
     /*------------------------------------------------------------------------------
      Purpose:
      Notes:
@@ -145,18 +178,19 @@ CLASS createCustomer INHERITS Form:
     DEFINE VARIABLE customerName AS CHARACTER NO-UNDO.
     DEFINE VARIABLE customerAddress AS CHARACTER NO-UNDO.
     DEFINE VARIABLE customerCity AS CHARACTER NO-UNDO.
-
-/*    selectedColumn = STRING(THIS-OBJECT:filterComboBox:SelectedItem).*/
+    DEFINE VARIABLE customerState AS CHARACTER NO-UNDO.
+    
     customerName = THIS-OBJECT:customerNameTB:Text.
     customerAddress = THIS-OBJECT:customerAddressTB:Text.
     customerCity = THIS-OBJECT:customerCityTB:Text.
+    customerState = STRING(THIS-OBJECT:filterComboBox:SelectedItem).
                                                          
     CREATE Customer.
         ASSIGN
             Customer.Name = customerName.
             Customer.Address = customerAddress.
             Customer.City = customerCity.
-        
+            Customer.State = customerState.
 
     IF ERROR-STATUS:ERROR THEN
         MESSAGE "Error creating customer: " ERROR-STATUS:GET-MESSAGE(1)
