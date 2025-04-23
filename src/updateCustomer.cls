@@ -1,6 +1,6 @@
  
  /*------------------------------------------------------------------------
-    File        : createCustomer
+    File        : updateCustomer
     Purpose     : 
     Syntax      : 
     Description : 
@@ -14,7 +14,7 @@ USING Progress.Windows.Form.
 
 BLOCK-LEVEL ON ERROR UNDO, THROW.
 
-CLASS createCustomer INHERITS Form: 
+CLASS updateCustomer INHERITS Form: 
     
     DEFINE PRIVATE VARIABLE filterComboBox AS System.Windows.Forms.ComboBox NO-UNDO.
     DEFINE PRIVATE VARIABLE components AS System.ComponentModel.IContainer NO-UNDO.
@@ -23,14 +23,15 @@ CLASS createCustomer INHERITS Form:
     DEFINE PRIVATE VARIABLE customerAddressLabel AS System.Windows.Forms.Label NO-UNDO.
     DEFINE PRIVATE VARIABLE customerCityTB AS System.Windows.Forms.TextBox NO-UNDO.
     DEFINE PRIVATE VARIABLE customerCityLabel AS System.Windows.Forms.Label NO-UNDO.
-    DEFINE PRIVATE VARIABLE customerNameTB AS System.Windows.Forms.TextBox NO-UNDO.
-    DEFINE PRIVATE VARIABLE customerNameLabel AS System.Windows.Forms.Label NO-UNDO.
     DEFINE PRIVATE VARIABLE customerCountryTB AS System.Windows.Forms.TextBox NO-UNDO.
     DEFINE PRIVATE VARIABLE customerCountryLabel AS System.Windows.Forms.Label NO-UNDO.
+    DEFINE PRIVATE VARIABLE customerNameTB AS System.Windows.Forms.TextBox NO-UNDO.
+    DEFINE PRIVATE VARIABLE customerNameLabel AS System.Windows.Forms.Label NO-UNDO.
     DEFINE PRIVATE VARIABLE saveBtn AS System.Windows.Forms.Button NO-UNDO.
-        
-    CONSTRUCTOR PUBLIC createCustomer (  ):
-        
+    DEFINE PRIVATE VARIABLE selectedCustNum AS INTEGER NO-UNDO.
+
+
+    CONSTRUCTOR PUBLIC updateCustomer (  ):
         
         SUPER().
         InitializeComponent().
@@ -46,7 +47,7 @@ CLASS createCustomer INHERITS Form:
            We strongly suggest that the contents of this method only be modified using the
            Visual Designer to avoid any incompatible modifications. */
         
-        THIS-OBJECT:customerNameLabel    = NEW System.Windows.Forms.Label().
+        THIS-OBJECT:customerNameLabel     = NEW System.Windows.Forms.Label().
         THIS-OBJECT:customerAddressLabel = NEW System.Windows.Forms.Label().
         THIS-OBJECT:customerCityLabel    = NEW System.Windows.Forms.Label().
         THIS-OBJECT:customerCountryLabel    = NEW System.Windows.Forms.Label().
@@ -55,7 +56,7 @@ CLASS createCustomer INHERITS Form:
         THIS-OBJECT:customerCityTB       = NEW System.Windows.Forms.TextBox().
         THIS-OBJECT:customerCountryTB       = NEW System.Windows.Forms.TextBox().
         THIS-OBJECT:saveBtn              = NEW System.Windows.Forms.Button().
-        THIS-OBJECT:stateLabel           = NEW System.Windows.Forms.Label().
+        THIS-OBJECT:stateLabel         = NEW System.Windows.Forms.Label().
         THIS-OBJECT:filterComboBox       = NEW System.Windows.Forms.ComboBox().
     
         THIS-OBJECT:SuspendLayout().
@@ -82,10 +83,10 @@ CLASS createCustomer INHERITS Form:
         THIS-OBJECT:customerCityLabel:Text     = "City".
         THIS-OBJECT:customerCityLabel:UseCompatibleTextRendering = TRUE.
         
-        THIS-OBJECT:customerCountryLabel:Location = NEW System.Drawing.Point(13,105).
+        THIS-OBJECT:customerCountryLabel:Location = NEW System.Drawing.Point(13, 105).
         THIS-OBJECT:customerCountryLabel:Name     = "customerCountryLabel".
         THIS-OBJECT:customerCountryLabel:Size     = NEW System.Drawing.Size(50, 23).
-        THIS-OBJECT:customerCountryLabel:TabIndex = 3.
+        THIS-OBJECT:customerCountryLabel:TabIndex = 4.
         THIS-OBJECT:customerCountryLabel:Text     = "Country".
         THIS-OBJECT:customerCountryLabel:UseCompatibleTextRendering = TRUE.
     
@@ -156,8 +157,8 @@ CLASS createCustomer INHERITS Form:
     
         /* Final Form Settings */
         THIS-OBJECT:ClientSize = NEW System.Drawing.Size(450, 450).
-        THIS-OBJECT:Name       = "createCustomer".
-        THIS-OBJECT:Text       = "createCustomer".
+        THIS-OBJECT:Name       = "updateCustomer".
+        THIS-OBJECT:Text       = "updateCustomer".
     
         THIS-OBJECT:ResumeLayout(FALSE).
         THIS-OBJECT:PerformLayout().
@@ -166,7 +167,46 @@ CLASS createCustomer INHERITS Form:
             UNDO, THROW e.
         END CATCH.
     END METHOD.
-
+    
+    METHOD PUBLIC VOID loadCustomerToUpdate(INPUT custNumFromTable AS INTEGER):
+        DEFINE VARIABLE customerJson    AS CHARACTER NO-UNDO.
+        DEFINE VARIABLE customerList    AS customerList NO-UNDO.
+        DEFINE VARIABLE customerName    AS CHARACTER NO-UNDO.
+        DEFINE VARIABLE customerAddress AS CHARACTER NO-UNDO.
+        DEFINE VARIABLE customerCity    AS CHARACTER NO-UNDO.
+        DEFINE VARIABLE customerState AS CHARACTER NO-UNDO.
+        DEFINE VARIABLE customerCountry AS CHARACTER NO-UNDO.
+        DEFINE VARIABLE i AS INTEGER NO-UNDO.
+    
+        customerList = NEW customerList().
+        customerList:loadData("CustNum", STRING(custNumFromTable)).
+        customerJson = customerList:getCustomerAsJson().
+    
+        customerName    = JsonHelper:getJsonValue(customerJson, "Name").
+        customerName    = TRIM(REPLACE(customerName, '"', '')).
+        customerAddress = JsonHelper:getJsonValue(customerJson, "Address").
+        customerAddress = TRIM(REPLACE(customerAddress, '"', '')).
+        customerCity    = JsonHelper:getJsonValue(customerJson, "City").
+        customerCity    = TRIM(REPLACE(customerCity, '"', '')).
+        customerState   = JsonHelper:getJsonValue(customerJson, "State").
+        customerState = TRIM(REPLACE(customerState, '" }', '')).
+        customerCountry = JsonHelper:getJsonValue(customerJson, "Country").
+        customerCountry = TRIM(REPLACE(customerCountry, '" }', '')).
+        
+        THIS-OBJECT:customerNameTB:Text    = customerName.
+        THIS-OBJECT:customerAddressTB:Text = customerAddress.
+        THIS-OBJECT:customerCityTB:Text    = customerCity.
+        THIS-OBJECT:customerCountryTB:Text = customerCountry.
+        DO i = 0 TO THIS-OBJECT:filterComboBox:Items:Count - 1:
+            IF TRIM(CAPS(STRING(THIS-OBJECT:filterComboBox:Items:Item[i]))) = TRIM(CAPS(customerState)) THEN DO:
+                THIS-OBJECT:filterComboBox:SelectedIndex = i.
+                LEAVE.
+            END.
+        END.
+        THIS-OBJECT:selectedCustNum = custNumFromTable.
+        RETURN.
+    END METHOD.
+        
     METHOD PRIVATE VOID saveBtn_Click( INPUT sender AS System.Object, INPUT e AS System.EventArgs ):
     
         DEFINE VARIABLE customerName AS CHARACTER NO-UNDO.
@@ -179,28 +219,24 @@ CLASS createCustomer INHERITS Form:
         customerAddress = THIS-OBJECT:customerAddressTB:Text.
         customerCity = THIS-OBJECT:customerCityTB:Text.
         customerState = STRING(THIS-OBJECT:filterComboBox:SelectedItem).
-        customerCountry = THIS-OBJECT:customerCountryTB:Text.     
-                                                        
-        CREATE Customer.
-            ASSIGN
-                Customer.Name = customerName.
-                Customer.Address = customerAddress.
-                Customer.City = customerCity.
-                Customer.State = customerState.
-                Customer.Country = customerCountry.
-    
-        IF ERROR-STATUS:ERROR THEN
-            MESSAGE "Error creating customer: " ERROR-STATUS:GET-MESSAGE(1)
-            VIEW-AS ALERT-BOX ERROR.
-        ELSE DO:
-            MESSAGE "Customer" Customer.Name "created successfully with number" Customer.CustNum
-            VIEW-AS ALERT-BOX.
-
-    END.
+        customerCountry = THIS-OBJECT:customerCountryTB:Text.
+        
+        FIND FIRST Customer WHERE Customer.CustNum EQ THIS-OBJECT:selectedCustNum NO-ERROR.
+        IF AVAILABLE Customer THEN DO:
+        
+            ASSIGN Customer.Name = customerName.
+            ASSIGN Customer.Address = customerAddress.
+            ASSIGN Customer.City = customerCity.
+            ASSIGN Customer.State = customerState.
+            ASSIGN Customer.Country = customerCountry.
+            
+        
+        END.                                                     
+  
     RETURN.
     END METHOD.
     
-    DESTRUCTOR PUBLIC createCustomer ( ):
+    DESTRUCTOR PUBLIC updateCustomer ( ):
 
     END DESTRUCTOR.
 

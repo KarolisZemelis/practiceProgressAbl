@@ -21,13 +21,14 @@ USING Progress.Windows.Form.
 
 BLOCK-LEVEL ON ERROR UNDO, THROW.
 
-CLASS clientList INHERITS Form: 
+CLASS customerList INHERITS Form: 
+    DEFINE BUFFER Customer FOR Customer.
     DEFINE PRIVATE VARIABLE clearBtn AS System.Windows.Forms.Button NO-UNDO.
     DEFINE PRIVATE VARIABLE Filter AS System.Windows.Forms.Button NO-UNDO.
     DEFINE PRIVATE VARIABLE filterByLabel AS System.Windows.Forms.Label NO-UNDO.
     DEFINE PRIVATE VARIABLE filterComboBox AS System.Windows.Forms.ComboBox NO-UNDO.
     DEFINE PRIVATE VARIABLE filterTextBox AS System.Windows.Forms.TextBox NO-UNDO.
-    DEFINE VAR qh AS HANDLE NO-UNDO. 
+    DEFINE PUBLIC VARIABLE  qh AS HANDLE NO-UNDO. 
     
     DEFINE PRIVATE VARIABLE cityDataGridViewTextBoxColumn AS System.Windows.Forms.DataGridViewTextBoxColumn NO-UNDO.
     DEFINE PRIVATE VARIABLE bindingSource1 AS Progress.Data.BindingSource NO-UNDO.
@@ -38,12 +39,14 @@ CLASS clientList INHERITS Form:
     DEFINE PRIVATE VARIABLE custNumDataGridViewTextBoxColumn AS System.Windows.Forms.DataGridViewTextBoxColumn NO-UNDO.
     DEFINE PRIVATE VARIABLE countryDataGridViewTextBoxColumn AS System.Windows.Forms.DataGridViewTextBoxColumn NO-UNDO.
 
+    DEFINE PRIVATE VARIABLE dgCustomers AS HANDLE NO-UNDO.
+    DEFINE PRIVATE VARIABLE queryHandle AS HANDLE NO-UNDO.    
         
-    CONSTRUCTOR PUBLIC clientList (  ):
+    CONSTRUCTOR PUBLIC customerList (  ):
         
         SUPER().
         InitializeComponent().
-        loadTable("","").
+        loadData("","").
         THIS-OBJECT:ComponentsCollection:ADD(THIS-OBJECT:components).
         CATCH e AS Progress.Lang.Error:
             UNDO, THROW e.
@@ -51,28 +54,6 @@ CLASS clientList INHERITS Form:
 
     END CONSTRUCTOR.
 
-	@VisualDesigner.
-	METHOD PRIVATE VOID clearBtn_Click( INPUT sender AS System.Object, INPUT e AS System.EventArgs ):
-		
-		THIS-OBJECT:filterTextBox:Text=''.
-		THIS-OBJECT:filterComboBox:SelectedIndex = 1.
-		loadTable("","").
-		RETURN.
-
-	END METHOD.
-
-	@VisualDesigner.
-	METHOD PRIVATE VOID Filter_Click( INPUT sender AS System.Object, INPUT e AS System.EventArgs ):
-	    DEFINE VARIABLE selectedColumn AS CHARACTER NO-UNDO.
-        DEFINE VARIABLE inputValue     AS CHARACTER NO-UNDO.
-
-        selectedColumn = STRING(THIS-OBJECT:filterComboBox:SelectedItem).
-        inputValue     = THIS-OBJECT:filterTextBox:Text.
-        
-		loadTable(selectedColumn, inputValue).
-		RETURN.
-
-	END METHOD.
 
     METHOD PRIVATE VOID InitializeComponent(  ):
         
@@ -245,38 +226,105 @@ CLASS clientList INHERITS Form:
         END CATCH.
     END METHOD.
 
-	@VisualDesigner.
-	METHOD PRIVATE VOID clientList_Load( INPUT sender AS System.Object, INPUT e AS System.EventArgs ):
-		
-		RETURN.
+    METHOD PRIVATE VOID clientList_Load( INPUT sender AS System.Object, INPUT e AS System.EventArgs ):
+        
+        RETURN.
 
-	END METHOD.
-
-    METHOD PRIVATE VOID loadTable(INPUT columnName AS CHARACTER, INPUT filterValue AS CHARACTER):
-            
-            IF VALID-HANDLE(qh) THEN DO:
-                qh:QUERY-CLOSE().
-                DELETE OBJECT qh.
-            END.
-        
-            CREATE QUERY qh.
-            qh:SET-BUFFERS(BUFFER Customer:HANDLE).
-        
-            IF filterValue = "" OR filterValue = ? THEN DO:
-                qh:QUERY-PREPARE("FOR EACH Customer").
-            END.
-            ELSE DO:
-                DEFINE VARIABLE queryStr AS CHARACTER NO-UNDO.
-                queryStr = SUBSTITUTE("FOR EACH Customer WHERE Customer.&1 = '&2'", columnName, filterValue).
-                qh:QUERY-PREPARE(queryStr).
-            END.
-        
-            qh:QUERY-OPEN().
-            bindingSource1:handle = qh.
-        
     END METHOD.
 
-    DESTRUCTOR PUBLIC clientList ( ):
+    METHOD PRIVATE VOID clearBtn_Click( INPUT sender AS System.Object, INPUT e AS System.EventArgs ):
+        
+        THIS-OBJECT:filterTextBox:Text=''.
+        THIS-OBJECT:filterComboBox:SelectedIndex = 1.
+        loadData("","").
+        RETURN.
+
+    END METHOD.
+
+    METHOD PRIVATE VOID Filter_Click( INPUT sender AS System.Object, INPUT e AS System.EventArgs ):
+        DEFINE VARIABLE selectedColumn AS CHARACTER NO-UNDO.
+        DEFINE VARIABLE inputValue     AS CHARACTER NO-UNDO.
+
+        selectedColumn = STRING(THIS-OBJECT:filterComboBox:SelectedItem).
+        inputValue     = THIS-OBJECT:filterTextBox:Text.
+        
+        loadData(selectedColumn, inputValue).
+        RETURN.
+
+    END METHOD.
+
+    METHOD PUBLIC INTEGER GetSelectedCustNum():
+        DEFINE VARIABLE custNum AS INTEGER NO-UNDO.
+        DEFINE VARIABLE selectedRow AS System.Windows.Forms.DataGridViewRow NO-UNDO.
+
+        IF VALID-OBJECT(THIS-OBJECT:dataGridView1) AND
+           THIS-OBJECT:dataGridView1:SelectedRows:Count > 0 THEN DO:
+
+            selectedRow = CAST(THIS-OBJECT:dataGridView1:SelectedRows[0], System.Windows.Forms.DataGridViewRow).
+
+            IF VALID-OBJECT(selectedRow) THEN DO:
+                custNum = INTEGER(STRING(selectedRow:Cells[0]:Value)).
+
+            END.
+        END.
+
+        RETURN custNum.
+    END METHOD.
+
+    METHOD PUBLIC VOID loadData(INPUT columnName AS CHARACTER, INPUT filterValue AS CHARACTER):
+        IF VALID-HANDLE(qh) THEN DO:
+            qh:QUERY-CLOSE().
+            DELETE OBJECT qh.
+        END.
+    
+        CREATE QUERY qh.
+        qh:SET-BUFFERS(BUFFER Customer:HANDLE).
+    
+        DEFINE VARIABLE queryStr AS CHARACTER NO-UNDO.
+    
+        IF TRIM(filterValue) = "" OR filterValue = ? THEN DO:
+            queryStr = "FOR EACH Customer BY Customer.CustNum DESCENDING".
+        END.
+        ELSE DO:
+            IF LOOKUP(columnName, "CustNum") > 0 THEN DO:
+                queryStr = SUBSTITUTE("FOR EACH Customer WHERE Customer.&1 = &2 BY Customer.CustNum DESCENDING", columnName, filterValue).
+            END.
+            ELSE DO:
+                queryStr = SUBSTITUTE("FOR EACH Customer WHERE Customer.&1 = '&2' BY Customer.CustNum DESCENDING", columnName, filterValue).
+            END.
+        END.
+    
+        qh:QUERY-PREPARE(queryStr).
+        qh:QUERY-OPEN().
+    
+        bindingSource1:Handle = qh.
+    END METHOD.
+
+    METHOD PUBLIC LONGCHAR getCustomerAsJson():
+        DEFINE VARIABLE customerJson AS LONGCHAR NO-UNDO.
+    
+        IF AVAILABLE Customer THEN DO:
+           
+        customerJson = SUBSTITUTE(
+            "~{ ""CustNum"": &1, ""Name"": ""&2"", ""Address"": ""&3"", ""Phone"": ""&4"", ""City"": ""&5"", ""State"": ""&6"", ""Country"": ""&7"" ~}",
+            Customer.CustNum,
+            IF Customer.Name = "" THEN "" ELSE REPLACE(Customer.Name, '"', '\"'),
+            IF Customer.Address = "" THEN "" ELSE REPLACE(Customer.Address, '"', '\"'),
+            IF Customer.Phone = "" THEN "" ELSE REPLACE(Customer.Phone, '"', '\"'),
+            IF Customer.City = "" THEN "" ELSE REPLACE(Customer.City, '"', '\"'),
+            IF Customer.State = "" THEN "" ELSE REPLACE(Customer.State, '"', '\"'),
+            IF Customer.Country = "" THEN "" ELSE REPLACE(Customer.Country, '"', '\"')
+        ).
+    
+        END.
+        ELSE DO:
+            customerJson = '~{ "error": "Customer not found" ~}'.
+        END.
+    
+        RETURN customerJson.
+    END METHOD.
+
+    DESTRUCTOR PUBLIC customerList ( ):
         IF VALID-HANDLE(qh) THEN DO: 
             qh:QUERY-CLOSE().
             DELETE OBJECT qh.
